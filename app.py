@@ -624,7 +624,7 @@ def generate_qr(shelf_id):
         border=4,
     )
     # Use your server's IP address or domain name
-    url = f'http://192.168.27.131:5000/qr/shelf/{shelf_id}'
+    url = f'https://library-management-e3j5.onrender.com/qr/shelf/{shelf_id}'
     qr.add_data(url)
     qr.make(fit=True)
     
