@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-8 rounded shadow">
+    <h2 class="text-2xl mb-4">Add Book to Rack {{ rack_id }}</h2>
+    <form method="POST" class="space-y-4">
+        <div>
+            <label class="block text-sm font-medium mb-1">Book Name</label>
+            <input type="text" name="name" required 
+                   class="w-full p-2 border rounded"
+                   placeholder="Enter book name">
+        </div>
+        
+        <div>
+            <label class="block text-sm font-medium mb-1">Author</label>
+            <input type="text" name="author" required 
+                   class="w-full p-2 border rounded"
+                   placeholder="Enter author name">
+        </div>
+        
+        <div>
+            <label class="block text-sm font-medium mb-1">Quantity</label>
+            <input type="number" name="quantity" required 
+                   class="w-full p-2 border rounded"
+                   min="1" value="1">
+        </div>
+
+        <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
+            Add Book
+        </button>
+        
+        <a href="/shelf/{{ rack_id }}" class="block text-center text-blue-500 hover:underline">
+            Back to Shelf
+        </a>
+    </form>
+</div>
+{% endblock %}

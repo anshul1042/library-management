@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-8 rounded shadow">
+    <h2 class="text-2xl mb-4">Edit Book</h2>
+    <form method="POST" class="space-y-4">
+        <div>
+            <label class="block text-sm font-medium mb-1">Book Name</label>
+            <input type="text" name="name" value="{{ book.name }}" required 
+                   class="w-full p-2 border rounded">
+        </div>
+        
+        <div>
+            <label class="block text-sm font-medium mb-1">Author</label>
+            <input type="text" name="author" value="{{ book.author }}" required 
+                   class="w-full p-2 border rounded">
+        </div>
+        
+        <div>
+            <label class="block text-sm font-medium mb-1">Quantity</label>
+            <input type="number" name="quantity" value="{{ book.quantity }}" required 
+                   class="w-full p-2 border rounded" min="0">
+        </div>
+
+        <div class="flex space-x-4">
+            <button type="submit" class="flex-1 bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
+                Update Book
+            </button>
+            <a href="{{ url_for('view_shelf', shelf_id=book.rack.shelf_id) }}" 
+               class="flex-1 bg-gray-500 text-white p-2 rounded hover:bg-gray-600 text-center">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

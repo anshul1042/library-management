@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-lg mx-auto bg-white dark:bg-gray-800 p-6 rounded shadow">
+    <div class="mb-4">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Shelf {{ shelf.id }}</h2>
+        <p class="text-gray-600 dark:text-gray-400">Location: {{ shelf.location }}</p>
+    </div>
+    
+    {% for rack in shelf.racks %}
+    <div class="mb-6 bg-gray-50 dark:bg-gray-700 p-4 rounded">
+        <h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Rack {{ (loop.index0 + 1) }}</h3>
+        <div class="space-y-3">
+            {% for book in rack.books %}
+            <div class="border border-gray-200 dark:border-gray-600 p-3 rounded bg-white dark:bg-gray-800">
+                <p class="font-medium text-gray-900 dark:text-white">{{ book.name }}</p>
+                <p class="text-gray-600 dark:text-gray-400 text-sm">By: {{ book.author }}</p>
+                <p class="text-sm mt-1 text-gray-600 dark:text-gray-400">Available: {{ book.quantity }}</p>
+                {% if session.user_id %}
+                    {% if book.quantity > 0 %}
+                    <a href="/borrow/{{ book.id }}" 
+                       class="inline-block mt-2 text-blue-500 dark:text-blue-400 hover:underline">
+                        Borrow
+                    </a>
+                    {% else %}
+                    <p class="text-red-500 dark:text-red-400 text-sm mt-2">Currently unavailable</p>
+                    {% endif %}
+                {% else %}
+                    {% if book.quantity > 0 %}
+                    <p class="text-sm mt-2">
+                        <a href="/login?next=/qr/shelf/{{ shelf.id }}" 
+                           class="text-blue-500 dark:text-blue-400 hover:underline">
+                            Login
+                        </a> 
+                        or 
+                        <a href="/register" 
+                           class="text-blue-500 dark:text-blue-400 hover:underline">
+                            Register
+                        </a> 
+                        to borrow this book
+                    </p>
+                    {% else %}
+                    <p class="text-red-500 dark:text-red-400 text-sm mt-2">Currently unavailable</p>
+                    {% endif %}
+                {% endif %}
+            </div>
+            {% else %}
+            <p class="text-gray-500 dark:text-gray-400">No books available in this rack</p>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+    
+    <div class="mt-4 text-center">
+        <a href="/" class="text-blue-500 dark:text-blue-400 hover:underline">Back to Home</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-md mx-auto bg-white dark:bg-gray-800 p-8 rounded shadow">
+    <h2 class="text-2xl mb-4 text-gray-900 dark:text-white">Edit Shelf {{ shelf.id }}</h2>
+    <form method="POST" class="space-y-4">
+        <div>
+            <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Shelf Location</label>
+            <input type="text" name="location" value="{{ shelf.location }}" required 
+                   class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+        </div>
+
+        <!-- Add Racks Section -->
+        <div>
+            <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Add New Racks</label>
+            <div class="flex space-x-2">
+                <input type="number" name="num_racks" min="1" max="10" value="1" 
+                       class="w-24 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                <button type="submit" name="action" value="add_racks"
+                        class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors">
+                    Add Racks
+                </button>
+            </div>
+        </div>
+        
+        <!-- Current Racks Display -->
+        <div class="mt-6">
+            <h3 class="text-lg font-medium mb-2 text-gray-800 dark:text-white">Current Racks</h3>
+            <div class="space-y-2">
+                {% for rack in shelf.racks %}
+                <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded">
+                    <span class="text-gray-700 dark:text-gray-300">Rack {{ loop.index }}</span>
+                    <form method="POST" action="{{ url_for('delete_rack', rack_id=rack.id) }}" class="inline">
+                        <button type="submit" onclick="return confirm('Delete this rack?')"
+                                class="text-red-500 hover:text-red-600 hover:underline dark:text-red-400">
+                            Delete
+                        </button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="flex space-x-4 mt-6">
+            <button type="submit" name="action" value="update_shelf" 
+                    class="flex-1 bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
+                Update Shelf
+            </button>
+            <a href="/admin/dashboard" 
+               class="flex-1 bg-gray-500 text-white p-2 rounded hover:bg-gray-600 text-center">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

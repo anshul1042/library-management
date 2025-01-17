@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-6xl mx-auto p-6">
+    <div class="border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Borrowing History</h1>
+        <button onclick="window.location.href='/'" 
+                class="bg-gray-500 dark:bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-600 hover:underline dark:hover:bg-gray-700 transition-colors">
+            Back to Dashboard
+        </button>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow">
+        {% if history %}
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Book</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Borrowed</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for record in history %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                        <div class="text-sm font-medium text-gray-900">{{ record.book.name }}</div>
+                        <div class="text-sm text-gray-500">{{ record.book.author }}</div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        {{ record.borrow_date.strftime('%Y-%m-%d') }}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        {{ record.return_date.strftime('%Y-%m-%d') }}
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if record.returned %}
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            Returned
+                        </span>
+                        {% elif record.return_date < now %}
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                            Overdue
+                        </span>
+                        {% else %}
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                            Borrowed
+                        </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="text-center py-12">
+            <p class="text-gray-500">No borrowing history available.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

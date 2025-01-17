@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-7xl mx-auto p-6">
+    <div class="border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Library Shelves</h1>
+        <button onclick="window.location.href='/'" 
+                class="bg-gray-500 dark:bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-600 hover:underline dark:hover:bg-gray-700 transition-colors">
+            Back to Dashboard
+        </button>
+    </div>
+    
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for shelf in shelves %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-2 text-gray-800 dark:text-white">
+                Shelf {{ shelf.id }} <!-- Added shelf number -->
+                <span class="text-gray-600 dark:text-gray-400 text-base">
+                    ({{ shelf.location }})
+                </span>
+            </h2>
+            <div class="mb-4">
+                {% if shelf.qr_code %}
+                <img src="{{ url_for('static', filename=shelf.qr_code.replace('static/', '')) }}" 
+                     alt="Shelf QR Code" 
+                     class="w-32 h-32 mx-auto mb-4 bg-white p-2 rounded">
+                {% endif %}
+            </div>
+            <a href="{{ url_for('view_shelf', shelf_id=shelf.id) }}" 
+               class="inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
+                View Books
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

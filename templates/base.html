@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <title>Library Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        /* Dark theme styles */
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #9ca3af;
+            --card-bg: #2d2d2d;
+            --border-color: #404040;
+            --hover-bg: #374151;
+        }
+
+        /* Base dark theme overrides */
+        [data-theme="dark"] body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        /* Card and content backgrounds */
+        [data-theme="dark"] .bg-white,
+        [data-theme="dark"] .bg-gray-50,
+        [data-theme="dark"] .bg-gray-100 {
+            background-color: var(--card-bg) !important;
+        }
+
+        /* Text colors */
+        [data-theme="dark"] .text-gray-500,
+        [data-theme="dark"] .text-gray-600,
+        [data-theme="dark"] .text-gray-700,
+        [data-theme="dark"] .text-gray-800,
+        [data-theme="dark"] .text-gray-900,
+        [data-theme="dark"] .text-black {
+            color: var(--text-primary) !important;
+        }
+
+        /* Hover states */
+        [data-theme="dark"] .hover\:bg-gray-50:hover,
+        [data-theme="dark"] .hover\:bg-gray-100:hover {
+            background-color: var(--hover-bg) !important;
+        }
+
+        /* Table specific styles */
+        [data-theme="dark"] table {
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] th {
+            color: var(--text-secondary);
+            background-color: var(--card-bg);
+        }
+
+        [data-theme="dark"] td {
+            color: var(--text-primary) !important;
+            background-color: var(--card-bg);
+        }
+
+        /* Border colors */
+        [data-theme="dark"] .border,
+        [data-theme="dark"] .divide-gray-200 > * + * {
+            border-color: var(--border-color);
+        }
+
+        /* Base font size adjustments for mobile */
+        @media (max-width: 768px) {
+            html {
+                font-size: 14px;
+            }
+            
+            /* Increase tap target sizes on mobile */
+            button, 
+            input, 
+            select, 
+            a {
+                min-height: 44px;
+                padding: 0.75rem !important;
+            }
+
+            /* Adjust table display for mobile */
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            /* Make forms more mobile-friendly */
+            .form-input
+        }
+
+        /* Override for underline hover */
+        .hover\:underline:hover {
+            text-decoration: underline !important;
+        }
+        
+        /* Ensure links and buttons have proper hover states */
+        a:hover, button:hover {
+            text-decoration: underline;
+        }
+
+        /* Notification Alert Styles */
+        .notification {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        /* Light theme notification */
+        .notification-success {
+            background-color: #DEF7EC;
+            border: 1px solid #31C48D;
+            color: #03543F;
+        }
+
+        /* Dark theme notification */
+        [data-theme="dark"] .notification-success {
+            background-color: #065F46;
+            border: 1px solid #059669;
+            color: #ECFDF5;
+        }
+
+        /* Animation keyframes */
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .slide-in {
+            animation: slideIn 0.3s forwards;
+        }
+
+        .slide-out {
+            animation: slideOut 0.3s forwards;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 transition-colors duration-200">
+    <nav class="bg-blue-600 p-4 text-white">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="/" class="text-xl font-bold">Library System</a>
+            {% if session.user_id %}
+            <div class="flex items-center space-x-4">
+                <button onclick="toggleTheme()" class="hover:text-gray-200" title="Toggle Theme">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                    </svg>
+                </button>
+                {% if session.is_admin %}
+                <a href="{{ url_for('admin_settings') }}" class="hover:text-gray-200">
+                {% else %}
+                <a href="{{ url_for('user_settings') }}" class="hover:text-gray-200">
+                {% endif %}
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                </a>
+                <a href="/logout" class="hover:text-gray-200">Logout</a>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+    <div class="container mx-auto p-4">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script>
+    function toggleTheme() {
+        const html = document.documentElement;
+        const currentTheme = html.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        html.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    }
+
+    // Set theme on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    });
+
+    function showNotification(message, type = 'success') {
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>${message}</span>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Trigger animation
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 100);
+        
+        // Remove notification after 3 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        }, 3000);
+    }
+
+    // Add event listener for notifications
+    document.addEventListener('showNotification', (e) => {
+        showNotification(e.detail.message, e.detail.type);
+    });
+    </script>
+</body>
+</html>

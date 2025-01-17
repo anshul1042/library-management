@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-lg mx-auto bg-white p-6 rounded shadow text-center">
+    <h2 class="text-xl mb-4">{{ message }}</h2>
+    {% if session.user_id %}
+    <p class="text-gray-600">Use your phone to scan a shelf's QR code to view its contents</p>
+    {% else %}
+    <p class="mt-4">
+        <a href="/login" class="text-blue-500 hover:underline">Login</a> or 
+        <a href="/register" class="text-blue-500 hover:underline">Register</a> to borrow books
+    </p>
+    {% endif %}
+</div>
+{% endblock %}
