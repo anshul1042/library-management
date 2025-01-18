@@ -347,14 +347,20 @@
                     </thead>
                     <tbody>
                         {% for borrow in record.list %}
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-600">
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-600" data-record-id="{{ borrow.id }}">
                             <td class="px-4 py-2">
                                 <div class="space-y-1">
-                                    <p class="font-medium text-gray-900 dark:text-white">{{ borrow.book.name }}</p>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">By: {{ borrow.book.author }}</p>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">
-                                        Location: {{ borrow.book.rack.shelf.location }}
-                                    </p>
+                                    {% if borrow.book %}
+                                        <p class="font-medium text-gray-900 dark:text-white">{{ borrow.book.name }}</p>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">By: {{ borrow.book.author }}</p>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                                            Location: {{ borrow.book.rack.shelf.location }}
+                                        </p>
+                                    {% else %}
+                                        <p class="font-medium text-gray-900 dark:text-white">{{ borrow.book_name }}</p>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">By: {{ borrow.book_author }}</p>
+                                        <p class="text-sm text-red-500">(Book has been removed from library)</p>
+                                    {% endif %}
                                 </div>
                             </td>
                             <td class="px-4 py-2">
@@ -597,10 +603,14 @@ function showReturnConfirmation(recordId) {
             if (data.success) {
                 showSuccessAlert(data.message);
                 closeReturnModal();
-                // Reload the page after successful return
-                setTimeout(() => {
-                    location.reload();
-                }, 1500);
+                // Update stats immediately
+                document.getElementById('total-borrowed').textContent = data.stats.total_borrowed;
+                document.getElementById('total-overdue').textContent = data.stats.total_overdue;
+                // Remove the returned book row
+                const bookRow = document.querySelector(`[data-record-id="${recordId}"]`);
+                if (bookRow) {
+                    bookRow.remove();
+                }
             }
         });
     });

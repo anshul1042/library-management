@@ -171,9 +171,10 @@ def user_return_book(record_id):
         flash('Unauthorized action', 'error')
         return redirect('/')
     
-    # Update book status
+    # Update book status if book still exists
     record.returned = True
-    record.book.quantity += 1
+    if record.book:  # Only update quantity if book exists
+        record.book.quantity += 1
     db.session.commit()
     
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -215,49 +216,44 @@ def admin_dashboard():
     
     now = datetime.utcnow()
     
-    # Get all shelves with eager loading of relationships
+    # Get all borrowed books including deleted ones
+    borrowed_books = BorrowRecord.query.filter_by(returned=False)\
+        .options(
+            db.joinedload(BorrowRecord.user),
+            db.joinedload(BorrowRecord.book)
+        ).all()
+    
+    # Get all shelves with eager loading
     shelves = Shelf.query.options(
         db.joinedload(Shelf.racks).joinedload(Rack.books)
     ).all()
     
-    # Get all books with proper relationship loading
-    all_books = Book.query.filter(Book.rack_id.isnot(None)).options(
-        db.joinedload(Book.rack).joinedload(Rack.shelf)
-    ).all()
+    # Get all books excluding deleted ones
+    all_books = Book.query.filter(Book.rack_id.isnot(None)).all()
     
     # Get all non-admin users
     all_users = User.query.filter_by(is_admin=False).all()
-    
-    # Get borrowed books with relationships and ensure books have racks
-    borrowed_books = BorrowRecord.query.join(Book).filter(
-        BorrowRecord.returned == False,
-        Book.rack_id.isnot(None)
-    ).options(
-        db.joinedload(BorrowRecord.book).joinedload(Book.rack),
-        db.joinedload(BorrowRecord.user)
-    ).all()
     
     # Get overdue books
     overdue_books = [record for record in borrowed_books if record.return_date < now]
     for record in overdue_books:
         record.days_overdue = (now - record.return_date).days
     
-    # Calculate stats
     stats = {
-        'total_books': Book.query.count(),
-        'total_users': User.query.filter_by(is_admin=False).count(),
+        'total_books': len(all_books),
+        'total_users': len(all_users),
         'total_borrowed': len(borrowed_books),
         'total_overdue': len(overdue_books)
     }
     
     return render_template('admin_dashboard.html',
-                    stats=stats,
-                    all_books=all_books,
-                    all_users=all_users,
-                    borrowed_books=borrowed_books,
-                    overdue_books=overdue_books,
-                    shelves=shelves,
-                    now=now)
+                         stats=stats,
+                         all_books=all_books,
+                         all_users=all_users,
+                         borrowed_books=borrowed_books,
+                         overdue_books=overdue_books,
+                         shelves=shelves,
+                         now=now)
 
 @app.route('/admin/shelf', methods=['GET', 'POST'])
 @login_required
@@ -319,25 +315,27 @@ def delete_shelf(shelf_id):
         
     shelf = Shelf.query.get_or_404(shelf_id)
     
-    # Delete associated QR code file
-    if shelf.qr_code:
-        try:
-            if os.path.exists(shelf.qr_code):
-                os.remove(shelf.qr_code)
-        except:
-            pass  # Ignore file deletion errors
-            
-    # Delete all associated racks and books first
+    # Handle books and racks
     for rack in shelf.racks:
         for book in rack.books:
+            # Check for active borrows
+            active_borrows = BorrowRecord.query.filter_by(
+                book_id=book.id, 
+                returned=False
+            ).all()
+            
+            # Update borrow records with backup data
+            for record in active_borrows:
+                record.book_name = book.name
+                record.book_author = book.author
+                record.book_id = None  # Detach from book
+            
             db.session.delete(book)
         db.session.delete(rack)
     
-    # Delete the shelf
     db.session.delete(shelf)
     db.session.commit()
     
-    flash('Shelf deleted successfully!', 'success')
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/shelf/<int:shelf_id>')
@@ -437,19 +435,33 @@ def return_book(record_id):
         return redirect('/')
         
     record = BorrowRecord.query.get_or_404(record_id)
-    record.returned = True
-    record.book.quantity += 1
+    
+    # First check if book exists and hasn't been returned yet
+    if record.book and not record.returned:
+        record.book.quantity += 1  # Increment quantity first
+        record.returned = True     # Then mark as returned
+    else:
+        record.returned = True     # Just mark as returned for deleted books
+    
     db.session.commit()
-
-    # Return JSON response for AJAX requests
+    
+    # Return updated stats with JSON response for AJAX requests
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        now = datetime.utcnow()
+        borrowed_books = BorrowRecord.query.filter_by(returned=False).all()
+        overdue_books = [r for r in borrowed_books if r.return_date < now]
+        
         return jsonify({
             'success': True,
-            'message': 'Book returned successfully!'
+            'message': 'Book returned successfully!',
+            'stats': {
+                'total_borrowed': len(borrowed_books),
+                'total_overdue': len(overdue_books)
+            }
         })
-        
-    flash('Book marked as returned', 'success')
-    return redirect('/admin/dashboard')
+    
+    flash('Book returned successfully!', 'success')
+    return redirect(url_for('admin_dashboard'))
 
 
 @app.route('/admin/book/<int:book_id>/edit', methods=['GET', 'POST'])
@@ -630,8 +642,11 @@ def get_stats():
     borrowed_books = BorrowRecord.query.filter_by(returned=False).all()
     overdue_books = [record for record in borrowed_books if record.return_date < now]
     
+    # Only count books that have a valid rack (not deleted)
+    total_books = Book.query.filter(Book.rack_id.isnot(None)).count()
+    
     stats = {
-        'total_books': Book.query.count(),
+        'total_books': total_books,
         'total_users': User.query.filter_by(is_admin=False).count(),
         'total_borrowed': len(borrowed_books),
         'total_overdue': len(overdue_books)
