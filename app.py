@@ -7,8 +7,13 @@ import os
 from flask import url_for
 from functools import wraps
 
+# Update database configuration
+db_path = os.environ.get('DATABASE_URL', 'sqlite:///library.db')
+if db_path.startswith("postgres://"):
+    db_path = db_path.replace("postgres://", "postgresql://", 1)
+
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///library.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = db_path
 app.config['SECRET_KEY'] = 'your_secret_key'
 db = SQLAlchemy(app)
 
@@ -317,16 +322,23 @@ def delete_shelf(shelf_id):
     # Delete associated QR code file
     if shelf.qr_code:
         try:
-            os.remove(shelf.qr_code)
+            if os.path.exists(shelf.qr_code):
+                os.remove(shelf.qr_code)
         except:
-            pass
+            pass  # Ignore file deletion errors
+            
+    # Delete all associated racks and books first
+    for rack in shelf.racks:
+        for book in rack.books:
+            db.session.delete(book)
+        db.session.delete(rack)
     
     # Delete the shelf
     db.session.delete(shelf)
     db.session.commit()
     
     flash('Shelf deleted successfully!', 'success')
-    return redirect(url_for('admin_dashboard'))  # Add this return statement
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/shelf/<int:shelf_id>')
 @login_required
@@ -347,33 +359,38 @@ def edit_shelf(shelf_id):
     if request.method == 'POST':
         action = request.form.get('action')
         
-        if action == 'add_racks':
-            # Add new racks
-            num_racks = int(request.form.get('num_racks', 1))
-            for _ in range(num_racks):
-                rack = Rack(shelf_id=shelf.id)
-                db.session.add(rack)
-            db.session.commit()
-            flash(f'{num_racks} new rack(s) added successfully!', 'success')
-            return redirect(url_for('edit_shelf', shelf_id=shelf.id))
-            
-        elif action == 'update_shelf':
-            # Update shelf location
-            if shelf.location != request.form['location']:
-                # Delete old QR code if location changed
-                if shelf.qr_code:
-                    try:
-                        os.remove(shelf.qr_code)
-                        shelf.qr_code = None
-                    except:
-                        pass
-                shelf.location = request.form['location']
+        try:
+            if action == 'add_racks':
+                # Add new racks
+                num_racks = int(request.form.get('num_racks', 1))
+                for _ in range(num_racks):
+                    rack = Rack(shelf_id=shelf.id)
+                    db.session.add(rack)
                 db.session.commit()
-                # Generate new QR code
-                generate_qr(shelf.id)
-                flash('Shelf updated successfully!', 'success')
-            return redirect('/admin/dashboard')
-        
+                flash(f'{num_racks} new rack(s) added successfully!', 'success')
+                return redirect(url_for('edit_shelf', shelf_id=shelf.id))
+                
+            elif action == 'update_shelf':
+                # Update shelf location
+                if shelf.location != request.form['location']:
+                    # Delete old QR code if location changed
+                    if shelf.qr_code and os.path.exists(shelf.qr_code):
+                        try:
+                            os.remove(shelf.qr_code)
+                            shelf.qr_code = None
+                        except:
+                            pass
+                    shelf.location = request.form['location']
+                    db.session.commit()
+                    # Generate new QR code
+                    generate_qr(shelf.id)
+                    flash('Shelf updated successfully!', 'success')
+                return redirect('/admin/dashboard')
+        except Exception as e:
+            db.session.rollback()
+            flash('Error updating shelf: ' + str(e), 'error')
+            return redirect(url_for('edit_shelf', shelf_id=shelf.id))
+    
     return render_template('edit_shelf.html', shelf=shelf)
 
 
@@ -471,10 +488,16 @@ def delete_book(book_id):
     for record in active_borrows:
         record.book_name = book.name
         record.book_author = book.author
+        record.book_id = None  # Detach from book
     
     db.session.delete(book)
-    db.session.commit()
-    flash('Book deleted successfully!', 'success')
+    try:
+        db.session.commit()
+        flash('Book deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting book: ' + str(e), 'error')
+    
     return redirect(url_for('admin_dashboard') + '#books-detail')
 
 @app.route('/admin/rack/<int:rack_id>/delete', methods=['POST'])
